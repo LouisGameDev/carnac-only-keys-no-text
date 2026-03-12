@@ -92,6 +92,6 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            deploy\Squirrel\Releases\carnac-${{ steps.version.outputs.VERSION }}-Setup.exe
-            deploy\Squirrel\Releases\carnac-${{ steps.version.outputs.VERSION }}-full.nupkg
-            deploy\Squirrel\Releases\RELEASES
+            deploy/Squirrel/Releases/carnac-${{ steps.version.outputs.VERSION }}-Setup.exe
+            deploy/Squirrel/Releases/carnac-${{ steps.version.outputs.VERSION }}-full.nupkg
+            deploy/Squirrel/Releases/RELEASES
