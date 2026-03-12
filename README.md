@@ -1,5 +1,7 @@
 ## Carnac the Magnificent Keyboard Utility
 
+> **Fork:** This version displays only raw key strokes. The shortcut name labels (e.g. `[Comment Selection]`) have been removed by stripping all keymap YAML files.
+
 [![Join the chat at https://gitter.im/Code52/carnac](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Code52/carnac?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 A keyboard logging and presentation utility for presentations, screencasts, and to help you become a better keyboard user.
