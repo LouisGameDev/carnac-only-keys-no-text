@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - 'release/**'
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -match 'refs/tags/(.+)') {
+            $version = $Matches[1]
+          } elseif ($env:GITHUB_REF -match 'refs/heads/release/(.+)') {
+            $version = $Matches[1]
+          } else {
+            $version = '0.0.0'
+          }
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore src\Carnac.sln
+
+      - name: Build Release
+        run: msbuild src\Carnac.sln /nologo /verbosity:minimal /p:Configuration=Release
+
+      - name: Install Squirrel
+        shell: pwsh
+        run: nuget install squirrel.windows -Version 1.9.1 -OutputDirectory src\packages
+
+      - name: Create NuGet package
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          (Get-Content carnac-release.nuspec) -replace '<version>.*</version>', "<version>$version</version>" |
+            Set-Content carnac-release.nuspec
+          New-Item -ItemType Directory -Path deploy\Squirrel -Force | Out-Null
+          nuget pack carnac-release.nuspec `
+            -BasePath src\Carnac\bin\Release `
+            -OutputDirectory deploy\Squirrel `
+            -NoPackageAnalysis
+
+      - name: Create Squirrel installer
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          New-Item -ItemType Directory -Path deploy\Squirrel\Releases -Force | Out-Null
+          & "src\packages\squirrel.windows.1.9.1\tools\Squirrel.exe" `
+            --releasify "deploy\Squirrel\carnac.$version.nupkg" `
+            --releaseDir "deploy\Squirrel\Releases" `
+            --no-msi `
+            --icon "src\Carnac\icon.ico" `
+            --setupIcon "src\Carnac\icon.ico"
+
+      - name: Rename Setup.exe
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          Rename-Item "deploy\Squirrel\Releases\Setup.exe" "carnac-$version-Setup.exe"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.VERSION }}
+          name: Carnac ${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          files: |
+            deploy\Squirrel\Releases\carnac-${{ steps.version.outputs.VERSION }}-Setup.exe
+            deploy\Squirrel\Releases\carnac-${{ steps.version.outputs.VERSION }}-full.nupkg
+            deploy\Squirrel\Releases\RELEASES
