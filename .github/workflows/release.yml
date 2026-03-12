@@ -68,12 +68,20 @@ jobs:
             --releaseDir "deploy\Squirrel\Releases" `
             --no-msi `
             --icon "src\Carnac\icon.ico" `
-            --setupIcon "src\Carnac\icon.ico"
+            --setupIcon "src\Carnac\icon.ico" *>&1 | Write-Output
+          if ($LASTEXITCODE -ne 0) { throw "Squirrel.exe failed with exit code $LASTEXITCODE" }
+          Write-Host "Squirrel output:"
+          Get-ChildItem "deploy\Squirrel\Releases" -ErrorAction SilentlyContinue | Format-Table Name, Length
 
       - name: Rename Setup.exe
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
+          if (-not (Test-Path "deploy\Squirrel\Releases\Setup.exe")) {
+            Write-Host "Contents of deploy\Squirrel\Releases:"
+            Get-ChildItem "deploy\Squirrel\Releases" -ErrorAction SilentlyContinue | Format-Table Name, Length
+            throw "Setup.exe not found"
+          }
           Rename-Item "deploy\Squirrel\Releases\Setup.exe" "carnac-$version-Setup.exe"
 
       - name: Create GitHub Release
