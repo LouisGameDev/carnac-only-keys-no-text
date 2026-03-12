@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <!--
+    Override Fody targets to prevent them running during VS Code language server
+    design-time builds. MSBuild imports this file after all project imports so
+    these definitions take precedence over the ones in Fody.targets.
+  -->
+  <Target
+      AfterTargets="AfterCompile"
+      Name="FodyTarget"
+      Condition="'$(FodyPath)' != '' And '$(DesignTimeBuild)' != 'true' And '@(IntermediateAssembly)' != ''"
+      DependsOnTargets="$(FodyDependsOnTargets)">
+    <Fody.WeavingTask
+          AssemblyPath="@(IntermediateAssembly)"
+          IntermediateDir="$(IntermediateDir)"
+          KeyFilePath="$(FodyKeyFilePath)"
+          NuGetPackageRoot="$(NuGetPackageRoot)"
+          ProjectDirectory="$(ProjectDir)"
+          SolutionDir="$(FodySolutionDir)"
+          References="@(ReferencePath)"
+          SignAssembly="$(FodySignAssembly)"
+          ReferenceCopyLocalPaths="@(ReferenceCopyLocalPaths)"
+          DefineConstants="$(DefineConstants)"
+      >
+      <Output
+        TaskParameter="ExecutedWeavers"
+        PropertyName="FodyExecutedWeavers" />
+    </Fody.WeavingTask>
+  </Target>
+
+  <Target
+      Condition="'$(FodyPath)' != '' And '$(NCrunch)' != '1' And '$(DesignTimeBuild)' != 'true' And '@(IntermediateAssembly)' != ''"
+      AfterTargets="AfterBuild"
+      Name="FodyVerifyTarget"
+      DependsOnTargets="$(FodyVerifyDependsOnTargets)">
+    <Fody.VerifyTask
+          ProjectDirectory="$(ProjectDir)"
+          TargetPath="$(TargetPath)"
+          SolutionDir="$(FodySolutionDir)"
+          DefineConstants="$(DefineConstants)"
+      />
+  </Target>
+</Project>
